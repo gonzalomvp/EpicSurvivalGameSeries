@@ -405,7 +405,7 @@ void ASGameMode::InitGame(const FString& MapName, const FString& Options, FStrin
 	// HACK: workaround to inject CheckRelevance() into the BeginPlay sequence
 	UFunction* Func = AActor::GetClass()->FindFunctionByName(FName(TEXT("ReceiveBeginPlay")));
 	Func->FunctionFlags |= FUNC_Native;
-	Func->SetNativeFunc((Native)&ASGameMode::BeginPlayMutatorHack);
+	Func->SetNativeFunc((FNativeFuncPtr)&ASGameMode::BeginPlayMutatorHack);
 
 	/* Spawn all mutators. */
 	for (int32 i = 0; i < MutatorClasses.Num(); i++)
@@ -434,20 +434,20 @@ bool ASGameMode::CheckRelevance_Implementation(AActor* Other)
 }
 
 
-void ASGameMode::BeginPlayMutatorHack(FFrame& Stack, RESULT_DECL)
+void ASGameMode::BeginPlayMutatorHack(UObject* Context, FFrame& Stack, RESULT_DECL)
 {
 	P_FINISH;
 
 	// WARNING: This function is called by every Actor in the level during his BeginPlay sequence. Meaning:  'this' is actually an AActor! Only do AActor things!
-	if (!IsA(ALevelScriptActor::StaticClass()) && !IsA(ASMutator::StaticClass()) &&
-		(RootComponent == NULL || RootComponent->Mobility != EComponentMobility::Static || (!IsA(AStaticMeshActor::StaticClass()) && !IsA(ALight::StaticClass()))))
+	if (!P_THIS->IsA(ALevelScriptActor::StaticClass()) && !P_THIS->IsA(ASMutator::StaticClass()) &&
+		(P_THIS->RootComponent == NULL || P_THIS->RootComponent->Mobility != EComponentMobility::Static || (!P_THIS->IsA(AStaticMeshActor::StaticClass()) && !P_THIS->IsA(ALight::StaticClass()))))
 	{
-		ASGameMode* Game = GetWorld()->GetAuthGameMode<ASGameMode>();
+		ASGameMode* Game = P_THIS->GetWorld()->GetAuthGameMode<ASGameMode>();
 		// a few type checks being AFTER the CheckRelevance() call is intentional; want mutators to be able to modify, but not outright destroy
-		if (Game != NULL && Game != this && !Game->CheckRelevance((AActor*)this) && !IsA(APlayerController::StaticClass()))
+		if (Game != NULL && Game != P_THIS && !Game->CheckRelevance((AActor*)P_THIS) && !P_THIS->IsA(APlayerController::StaticClass()))
 		{
 			/* Actors are destroyed if they fail the relevance checks (which moves through the gamemode specific check AND the chain of mutators) */
-			Destroy();
+			P_THIS->Destroy();
 		}
 	}
 }

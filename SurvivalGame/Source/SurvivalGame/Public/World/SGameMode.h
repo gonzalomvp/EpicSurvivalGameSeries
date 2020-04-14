@@ -155,6 +155,6 @@ protected:
 	virtual bool CheckRelevance_Implementation(AActor* Other);
 
 	/* Hacked into ReceiveBeginPlay() so we can do mutator replacement of Actors and such */
-	void BeginPlayMutatorHack(FFrame& Stack, RESULT_DECL);
+	static void BeginPlayMutatorHack(UObject* Context, FFrame& Stack, RESULT_DECL);
 
 };
